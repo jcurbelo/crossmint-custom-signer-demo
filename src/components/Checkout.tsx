@@ -1,9 +1,17 @@
 import { CrossmintEmbeddedCheckout } from "@crossmint/client-sdk-react-ui";
-import { useAccount, useWalletClient } from "wagmi";
-import { Hex, parseTransaction } from "viem";
+import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
+import { parseTransaction, type Hex } from "viem";
 import { useState } from "react";
+import { baseSepolia, polygonAmoy, sepolia } from "viem/chains";
 
 const collectionId = process.env.NEXT_PUBLIC_COLLECTION_ID as string;
+
+// map, crossmint custom chain to number
+const chainIds: Record<string, number> = {
+  "base-sepolia": baseSepolia.id,
+  "polygon-amoy": polygonAmoy.id,
+  "ethereum-sepolia": sepolia.id,
+};
 
 if (!collectionId) {
   throw new Error("Missing NEXT_PUBLIC_COLLECTION_ID");
@@ -12,6 +20,7 @@ if (!collectionId) {
 export const Checkout = () => {
   const { data: walletClient } = useWalletClient();
   const { address } = useAccount();
+  const { switchChain } = useSwitchChain();
   const [error, setError] = useState<string | null>(null);
 
   if (!walletClient || !address) {
@@ -37,17 +46,26 @@ export const Checkout = () => {
             enabled: true,
             payer: {
               address,
+              supportedChains: [
+                "base-sepolia",
+                "polygon-amoy",
+                "ethereum-sepolia",
+              ],
               initialChain: "base-sepolia",
               handleChainSwitch: async (chain) => {
+                console.log("Switching to chain");
+                console.log({ chain });
                 try {
                   setError(null);
-                  await walletClient.switchChain({ id: chain.id });
+                  await walletClient.switchChain({ id: chainIds[chain] });
                 } catch (error) {
                   console.error("Chain switch failed:", error);
                   setError("Failed to switch chain");
                 }
               },
               handleSignAndSendTransaction: async (serializedTransaction) => {
+                console.log("Sending transaction");
+                console.log({ serializedTransaction });
                 try {
                   setError(null);
                   // Parse the transaction
@@ -55,6 +73,7 @@ export const Checkout = () => {
 
                   // Send the transaction
                   const hash = await walletClient.sendTransaction({
+                    // biome-ignore lint/style/noNonNullAssertion: <explanation>
                     to: tx.to!,
                     value: tx.value,
                     data: tx.data ?? "0x",

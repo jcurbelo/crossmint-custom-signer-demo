@@ -1,6 +1,8 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import {
   baseSepolia,
+  polygonAmoy,
+  sepolia,
 } from 'wagmi/chains';
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string;
@@ -13,6 +15,8 @@ export const config = getDefaultConfig({
   projectId,
   chains: [
     baseSepolia,
+    polygonAmoy,
+    sepolia,
   ],
   ssr: true,
 });
